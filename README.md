@@ -40,7 +40,7 @@ If you find any **bugs** or have **suggestions**, feel free to open an **issue**
 
 
 
-  <img src="doc/menu.gif" width="300">
+
 
 
 ```

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Diagonal Level Visualizer</title>
+<style>
+  body { background:#111; color:white; font-family:sans-serif; }
+  canvas { 
+    background:#1a1a1a; 
+    image-rendering: pixelated;
+    border:2px solid #555;
+  }
+  input {
+      width:90%;
+  }
+  .controls { margin:10px 0; }
+</style>
+</head>
+<body>
+
+<h2>320x220 Diagonal Obstacle Preview</h2>
+
+<div class="controls">
+  Difficulty: 
+  <input type="range" id="difficulty" min="1" max="2000" value="50">
+  <span id="diffVal">5</span>
+</div>
+
+<div class="values">
+  Values :
+  <ul>
+    <li>Obstacle Spacing: <span id="spacingVal"></span></li>
+    <li>Line Spawn Y Range Max: <span id="spawnRangeValMax"></span></li>
+    <li>Line Spawn Y Range Min: <span id="spawnRangeValMin"></span></li>
+
+  </ul>
+</div>
+
+<canvas id="canvas" width="320" height="220"></canvas>
+
+<script>
+const WIDTH = 320;
+const HEIGHT = 220;
+
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+const diffSlider = document.getElementById("difficulty");
+const diffVal = document.getElementById("diffVal");
+
+const spacingVal = document.getElementById("spacingVal");
+const spawnRangeValMax = document.getElementById("spawnRangeValMax");
+const spawnRangeValMin = document.getElementById("spawnRangeValMin");
+
+diffSlider.oninput = () => {
+  diffVal.textContent = diffSlider.value;
+  generateLevel();
+};
+
+let obstacles = [];
+
+function rand(min, max){
+  return Math.floor(Math.random()*(max-min+1))+min;
+}
+
+function generateLevel(){
+  ctx.clearRect(0,0,WIDTH,HEIGHT);
+  obstacles = [];
+
+  let difficulty = parseInt(diffSlider.value);
+
+  let diagonal_direction = 1;
+  let y = 100;
+
+  let pxmax = 200 - Math.floor(35 * Math.log10(difficulty + 1));
+  let pxmin = 210 - Math.floor(45 * Math.log10(difficulty + 1));
+
+  let spacing = rand(pxmin, pxmax);
+
+  let line_spawn_max_y = 190 - Math.floor(22 * Math.log10(difficulty + 1));
+  let line_spawn_min_y = 90 - Math.floor(5 * Math.log10(difficulty + 1));
+
+  spacingVal.textContent = spacing;
+  spawnRangeValMax.textContent = line_spawn_max_y;
+  spawnRangeValMin.textContent = line_spawn_min_y;
+
+  let x = 0;
+
+  while (x < WIDTH + 200)
+  {
+    obstacles.push({
+      x: x,
+      y: y,
+      hole_y_size: spacing
+    });
+
+    if (y > line_spawn_max_y)
+      diagonal_direction = -1;
+    else if (y < line_spawn_min_y)
+      diagonal_direction = 1;
+
+    y += 22 * diagonal_direction;
+    x += 16;
+  }
+
+  drawLevel();
+}
+
+function renderLineObstacle(ob)
+{
+  let alpha = 1;
+
+  let hole_y_size = ob.hole_y_size * alpha + (235 * (1 - alpha));
+  let hole_i = Math.floor(hole_y_size);
+
+  // Position réelle du trou
+  let top = Math.floor(ob.y - hole_i / 2);
+  let bottom = top + hole_i;
+
+  // Clamp propre
+  if (top < 0) top = 0;
+  if (bottom > HEIGHT) bottom = HEIGHT;
+
+  let first_height = top;
+  let second_height = HEIGHT - bottom;
+
+  let x_line = Math.floor(ob.x - 4);
+
+  ctx.fillStyle = "#ffffff";
+
+  // ===== TOP =====
+  if (first_height > 0)
+  {
+    ctx.fillRect(x_line, first_height - 2, 16, 2);
+
+    ctx.fillStyle = "black";
+    ctx.fillRect(x_line, 0, 16, first_height - 2);
+  }
+
+  // ===== BOTTOM =====
+  if (second_height > 0)
+  {
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(x_line, bottom, 16, 2);
+
+    ctx.fillStyle = "black";
+    ctx.fillRect(x_line, bottom + 2, 16, second_height - 2);
+  }
+
+  // ===== HOLE =====
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(x_line, top, 16, bottom - top);
+}
+
+
+function drawLevel(){
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(0,0,WIDTH,HEIGHT);
+
+  for(let ob of obstacles)
+    renderLineObstacle(ob);
+}
+
+generateLevel();
+</script>
+
+</body>
+</html>

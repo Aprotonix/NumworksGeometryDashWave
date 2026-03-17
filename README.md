@@ -23,6 +23,21 @@ Try the old python version : **https://my.numworks.com/python/artlislisart/geome
 
 **`CLEAR`**   -> Go to Start Menu
 
+## Roadmap
+
+Features :
+- [X] Save Highscore
+- [ ] New Backround Colors (Green, Light blue, Red...)
+- [ ] Boss Zone
+- [ ] Block Glowing
+- [ ] Improve Random block generation (Not two block aligned)
+- [ ] Improve Home Menu
+- [ ] Make Portals (Invert controls, Resize, Speed...)
+- [ ] Make Start Animation : Camera not centered
+- [ ] Make Textures
+- [ ] Diagonal Zone with more resolution
+
+
 ## Installation
 
 1. Download the `wave.nwa` file from the **Releases** section.

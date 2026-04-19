@@ -31,7 +31,7 @@ Features :
 - [ ] Boss Zone
 - [ ] Block Glowing
 - [ ] Improve Random block generation (Not two block aligned)
-- [ ] Improve Home Menu
+- [X] Improve Home Menu
 - [ ] Make Portals (Invert controls, Resize, Speed...)
 - [ ] Make Start Animation : Camera not centered
 - [ ] Make Textures

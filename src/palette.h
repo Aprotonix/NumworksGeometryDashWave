@@ -12,6 +12,7 @@ constexpr static EADK::Color Pink(0xCB6E79);
 constexpr static EADK::Color Red(0xFF0000);
 constexpr static EADK::Color White(0xFFFFFF);
 constexpr static EADK::Color Yellow(0xF3B443);
+constexpr static EADK::Color Void(0xFF00FF);
 
 
 #endif

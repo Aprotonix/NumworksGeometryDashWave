@@ -33,11 +33,21 @@ int generateRandomNumber(int a, int b)
 // TO OPTIMISE
 int generateRandomNumberFarFrom(int a, int b, int far_from, int min_distance)
 {
+
+  
+  // int median = (a + b) / 2;
+  // if (far_from > median) {
+  //   return generateRandomNumber(a, median );
+  // }
+  // else {
+  //   return generateRandomNumber(median, b);
+  // }
   int num = generateRandomNumber(a, b);
   if (abs(num - far_from) >= min_distance)
   {
     return num;
   }
+  else return generateRandomNumberFarFrom(a, b, far_from, min_distance);
 
   if (generateRandomNumber(0, 1) == 0)
   {
@@ -48,7 +58,8 @@ int generateRandomNumberFarFrom(int a, int b, int far_from, int min_distance)
   {
 
     return clamp(num - (min_distance - abs(num - far_from)), a, b);
-  }
+
+}
 }
 
 bool collideSquareCenter(Vector2 p1, uint16_t size1, Vector2 p2, uint16_t size2)
@@ -175,6 +186,7 @@ Game::Game()
   goToMenu();
 }
 
+//All reset when die and restart
 void Game::startLevel()
 {
   // Start game implementation
@@ -184,6 +196,7 @@ void Game::startLevel()
 
   has_jumped = false;
   jump_counter = 0;
+  //jump_speed = 0;
 
   switch (start_difficulty_chosen)
   {
@@ -210,7 +223,12 @@ void Game::startLevel()
   clearParticles();
 
   // PARTICLES
+  generateAllParticles();//Pregenerate all particles
   next_particle_player_x = 320;
+  particles_speed_boost = 0;
+  particles_speed_boost_descrease_step_tick_counter = 0;
+  particles_speed_boost_descrease_step_tick = 5;
+  speed_boost_start_x_player = 0;
 
   // LEVEL
   old_level_type = RANDOM;
@@ -221,7 +239,7 @@ void Game::startLevel()
   next_level_type_x = 1000;
 
   // OBSTACLES
-  next_obstacle_position = {320, 100};
+  next_obstacle_position = {320, 200};
   diagonal_direction = 1;
 
   background_alpha = 0.1f;
@@ -246,6 +264,8 @@ void Game::clearParticles()
   }
 }
 
+
+
 void Game::clearTrail()
 {
   for (int i = 0; i < TrailLength; ++i)
@@ -264,12 +284,42 @@ Vector2 Game::convertToCameraCoordinates(Vector2 position)
 }
 
 // RENDER #################################################
+void Game::renderTexture(int x, int y, int sizex, int sizey, const EADK::Color* texture)
+{
+  EADK::Rect rect(toInt(x), toInt(y), toInt(sizex), toInt(sizey));
+  EADK::Display::pushRect(rect, (texture));
+}
+
+void Game::renderTextureWithVoid(int x, int y, int sizex, int sizey, const EADK::Color* texture) {
+    for (int row = 0; row < sizey; row++) {
+        for (int col = 0; col < sizex; col++) {
+            EADK::Color c = texture[row * sizex + col];
+            if (c != Void) { // skip magenta
+                EADK::Rect pixel = {(uint16_t)(x + col), (uint16_t)(y + row), 1, 1};
+                EADK::Display::pushRectUniform(pixel, c);
+            }
+        }
+    }
+}
 
 void Game::renderPlayer()
 { // TO OPTIMISE DO RELATIVE POSITION SIZE
+
+  //  frame_tick_counter++;
+    
+  //   if (frame_tick_counter >= 1) {  // Change toutes les 2 ticks
+  //       frame_tick_counter = 0;
+        
+        if (go_to_up_fram) {
+            if (player_frame < 4) player_frame++;
+        } else {
+            if (player_frame > 0) player_frame--;
+        }
+    // }
+
   Vector2 renderPosition = convertToCameraCoordinates(player_position);
-  EADK::Rect playerRect(toInt(renderPosition.x - player_size.x / 2), toInt(renderPosition.y - player_size.y / 2), player_size.x, player_size.y);
-  EADK::Display::pushRectUniform(playerRect, Black);
+  // EADK::Rect playerRect(toInt(renderPosition.x - player_size.x / 2), toInt(renderPosition.y - player_size.y / 2), player_size.x, player_size.y);
+  // EADK::Display::pushRectUniform(playerRect, Black);
 
   // EADK::Rect playerRect2(toInt(renderPosition.x - 5) + 3, toInt(renderPosition.y - 5) + 3 * a, 10, 10);
   // EADK::Display::pushRectUniform(playerRect2, Black);
@@ -278,13 +328,25 @@ void Game::renderPlayer()
   // EADK::Rect playerRect3(toInt(renderPosition.x - 3.5) + 6, toInt(renderPosition.y - 3.5) + 6 * a, toInt(7), toInt(7));
   // EADK::Display::pushRectUniform(playerRect3, Black);
 
-  short int a = (player_velocity.y > 0) ? 1 : -1;
+  // short int a = (player_velocity.y > 0) ? 1 : -1;
 
-  EADK::Rect playerRect2(toInt(renderPosition.x - 4) + 3, toInt(renderPosition.y - 4) + 3 * a, 8, 8);
-  EADK::Display::pushRectUniform(playerRect2, Black);
+  // EADK::Rect playerRect2(toInt(renderPosition.x - 4) + 3, toInt(renderPosition.y - 4) + 3 * a, 8, 8);
+  // EADK::Display::pushRectUniform(playerRect2, Black);
 
-  EADK::Rect playerRect3(toInt(renderPosition.x - 6) - 3, toInt(renderPosition.y - 6) - 3 * a, 12, 12);
-  EADK::Display::pushRectUniform(playerRect3, Black);
+  // EADK::Rect playerRect3(toInt(renderPosition.x - 6) - 3, toInt(renderPosition.y - 6) - 3 * a, 12, 12);
+  // EADK::Display::pushRectUniform(playerRect3, Black);
+
+  uint8_t y_offset = 0;
+  if (player_frame == 1) y_offset = 2;
+  else if (player_frame == 3) y_offset = -2;
+  else if (player_frame == 4) y_offset = -3;
+  else if (player_frame == 0) y_offset = 3;
+
+  renderTextureWithVoid(toInt(renderPosition.x - 8  +3), toInt(renderPosition.y - 8 + y_offset), 16, 16, player_frames[player_frame]);
+
+  // EADK::Rect playerRect(toInt(renderPosition.x), toInt(renderPosition.y ), 1, 1);
+  // EADK::Display::pushRectUniform(playerRect, Red);
+
 }
 
 void Game::renderTrail()
@@ -293,15 +355,17 @@ void Game::renderTrail()
 
   // Skip the first due to skin
 
-  for (int i = 1; i < TrailLength - 1; ++i)
+  for (int i = 1; i < TrailLength - 1; ++i)  
   { //- 1 is to avoid glitch
-    if (player_trail[i].x == 0)
+    if (player_trail[i].x == 0  )
     {
       continue;
     }
     trailRenderPosition = convertToCameraCoordinates(player_trail[i]);
     EADK::Rect trailRect(toInt(trailRenderPosition.x - trail_size / 2), toInt(trailRenderPosition.y - trail_size / 2), toInt(trail_size), toInt(trail_size));
-    EADK::Display::pushRectUniform(trailRect, 0xFFFFFF);
+    // EADK::Display::pushRectUniform(trailRect, Color(200 + jump_speed, 200 + jump_speed, 200 + jump_speed).hex());
+    EADK::Display::pushRectUniform(trailRect, White);
+
   }
 
   // for (int i = 0; i < TrailLength -1 ; ++i) {
@@ -318,8 +382,8 @@ void Game::renderObstacles()
   Vector2 obRenderPosition;
   // bool is_dispawn_animation = false;
   Vector2u_int16 new_size = ob_size;
-  Vector2u_int16 new_size_inside = ob_inside_size;
-  uint8_t hole_y_size;
+//  Vector2u_int16 new_size_inside = ob_inside_size;
+ // uint8_t hole_y_size;
   // COLOR
   Color ob_background;
   if (current_statue == DEATH)
@@ -387,6 +451,8 @@ void Game::renderBlockObstacle(Vector2 obRenderPosition, int i, Color ob_backgro
 {
   Vector2u_int16 new_size = ob_size;
   Vector2u_int16 new_size_inside = ob_inside_size; // TO OPTIMISE
+
+  //ANIMATION
   if (obRenderPosition.x > x_end_spawn_animation)
   {
 
@@ -450,10 +516,15 @@ void Game::renderBlockObstacle(Vector2 obRenderPosition, int i, Color ob_backgro
   }
 
   // COLOR
+  //LIGHT HALO
+  // EADK::Rect obRect0(toInt(obRenderPosition.x - new_size.x / 2)-1, toInt(obRenderPosition.y - new_size.y / 2)-1, new_size.x+2, new_size.y+2);
+  // EADK::Display::pushRectUniform(obRect0, blendColor(ob_background, current_background, 0.5f).hex());
 
+  //WHITE BORDER
   EADK::Rect obRect(toInt(obRenderPosition.x - new_size.x / 2), toInt(obRenderPosition.y - new_size.y / 2), new_size.x, new_size.y);
   EADK::Display::pushRectUniform(obRect, ob_background.hex());
 
+  //BLACK INSIDE
   EADK::Rect obRect2(toInt(obRenderPosition.x - new_size_inside.x / 2), toInt(obRenderPosition.y - new_size_inside.y / 2), new_size_inside.x, new_size_inside.y);
   EADK::Display::pushRectUniform(obRect2, Black);
 }
@@ -677,9 +748,12 @@ void Game::render()
   renderPlayer();
   renderScore();
 
-  // renderNumber(180, 5, toInt(player_position.x), White);
-  // renderNumber(20, 5, toInt(difficulty), White);
-  // renderNumber(70, 5, toInt(250 - toInt(45 * log10(difficulty + 1))), White);
+  #if DEBUG
+  renderNumber(50, 5, player_frame, Yellow);
+  renderNumber(180, 5, toInt(player_position.x), White);
+  renderNumber(20, 5, toInt(difficulty), White);
+  renderNumber(70, 5, toInt(250 - toInt(45 * log10(difficulty + 1))), White);
+  #endif
 }
 
 // UPDATE ##########################################
@@ -688,7 +762,7 @@ void Game::handleInput()
 {
 
   EADK::Keyboard::State keyboardState = EADK::Keyboard::scan();
-  if (keyboardState.keyDown(EADK::Keyboard::Key::Shift))
+  if (keyboardState.keyDown(EADK::Keyboard::Key::Home) || keyboardState.keyDown(EADK::Keyboard::Key::Power))
   {
     quitGame();
     return;
@@ -712,20 +786,31 @@ void Game::handleInput()
       player_velocity.y = -player_real_vy;
       if (!has_jumped)
       {
+        go_to_up_fram  = true;
         jump_counter++;
+        // if (jump_counter < 40)  jump_speed += 10;
+        //if (jump_speed > 40) jump_speed = 40;
+       
         has_jumped = true;
       }
     }
     else
     {
+      go_to_up_fram  = false;
       player_velocity.y = player_real_vy;
       has_jumped = false;
+      // if (jump_speed > 0)
+      // {
+      //   jump_speed -= 1;
+      //   if (jump_speed < 0)
+      //     jump_speed = 0;
+      // }
     }
 
     if (keyboardState.keyDown(EADK::Keyboard::Key::Back))
     {
       goToPause();
-      EADK::Timing::msleep(200);
+      EADK::Timing::msleep(100);
     }
   }
 
@@ -767,7 +852,7 @@ void Game::handleInput()
         start_difficulty_chosen++;
       }
       updateMenuButton();
-      EADK::Timing::msleep(200);
+      EADK::Timing::msleep(170);
     }
     if (keyboardState.keyDown(EADK::Keyboard::Key::Left))
     {
@@ -780,7 +865,7 @@ void Game::handleInput()
         start_difficulty_chosen--;
       }
       updateMenuButton();
-      EADK::Timing::msleep(200);
+      EADK::Timing::msleep(170);
     }
   }
 }
@@ -825,8 +910,17 @@ void Game::startBlockRandomLevel()
 
   next_level_type_x = player_position.x + generateRandomNumber(2000, 3000); // DURATION
   // next_level_type_x = player_position.x + generateRandomNumber(1000, 1000); // DURATION
+//                                              400
+  next_obstacle_position = {player_position.x + 400, 200};
+  if (old_level_type == DIAGONAL)
+  {
+    particlesSpeedBoost(100, player_position.x, 10);
+   
+  }
+  else {
 
-  next_obstacle_position = {player_position.x + 400, 100};
+    particlesSpeedBoost(60, player_position.x + 0, 15);
+  }
 }
 
 void Game::startDiagonalLevel()
@@ -874,7 +968,11 @@ void Game::updateObstacles()
   // To Optimise
   if (current_level_type == RANDOM)
   {
-    int pxmax = 200 - toInt(40 * ln(difficulty / 15 + 1));
+    //OLD VERSION
+    // int pxmax = 200 - toInt(40 * ln(difficulty / 15 + 1));
+    // int pxmin = 70 - (10 * ln(difficulty / 10 + 1));
+
+    int pxmax = 195 - toInt(40 * ln(difficulty / 15 + 1));
     int pxmin = 70 - (10 * ln(difficulty / 10 + 1));
 
     if (pxmin < 0)
@@ -885,14 +983,14 @@ void Game::updateObstacles()
     if (player_position.x + 320 > next_obstacle_position.x && (next_level_type_x - player_position.x) > 500)
     {
 
-      int new_y = generateRandomNumberFarFrom(15, 220, next_obstacle_position.y, 25);
+      int new_y = generateRandomNumberFarFrom(15, 220, next_obstacle_position.y, 30);//25
       // if (abs(new_y - next_obstacle_position.y) < 40) // ERROR
       // {
       //   renderNumber(10, 5, abs(new_y - next_obstacle_position.y), White);
       // }
       addObstacle(player_position.x + 320, new_y);
 
-      next_obstacle_position = {player_position.x + 320 + generateRandomNumber(pxmin, pxmax), 40};
+      next_obstacle_position = {player_position.x + 320 + generateRandomNumber(pxmin, pxmax), new_y};
     }
   }
   else
@@ -1041,30 +1139,72 @@ void Game::respawn()
   startLevel();
 }
 
+
+void Game::particlesSpeedBoost(uint8_t speed, float x_player_coord, uint16_t descrease_step_tick)
+{
+  particles_speed_boost = speed;
+  particles_speed_boost_descrease_step_tick = descrease_step_tick;
+  speed_boost_start_x_player = x_player_coord;
+}
 // PARTICLES
+void Game::generateAllParticles()
+{
+  for (int i = 0; i < 10; ++i)//less start particles
+  {
+    particles[i] = Particle(generateRandomNumber(50, 255), generateRandomNumber(50, 320), generateRandomNumber(5, 235));
+
+  }
+}
+
+
 void Game::updateParticles()
 {
   // To Optimise
-
+// ADD NEW PARTICLE
   if (player_position.x + 320 > next_particle_player_x)
   {
-    // ADD NEW PARTICLE
+    //Shift Particles
     for (int i = ParticleMax - 1; i > 0; --i)
     {
       particles[i] = particles[i - 1];
     }
     //                                            size,                           x,                                y
     particles[0] = Particle(generateRandomNumber(50, 255), generateRandomNumber(50, 320), generateRandomNumber(5, 235));
-
+ if (particles_speed_boost > 0) {
+      next_particle_player_x = player_position.x + 320 + generateRandomNumber(0, 5);
+    }
+    else {
     next_particle_player_x = player_position.x + 320 + generateRandomNumber(10, 40);
+    }
   }
-
   // CLEARING AND MOVING
   for (int i = 0; i < ParticleMax; ++i)
   {
-    particles[i].position.x -= player_velocity.x / 3; // PARALLAX
+    if (speed_boost_start_x_player < player_position.x) {
+    
+      if (particles_speed_boost > 0) {
+        if (particles_speed_boost_descrease_step_tick_counter == 0) {
+          particles_speed_boost_descrease_step_tick_counter = particles_speed_boost_descrease_step_tick;
+          particles_speed_boost -=1;
+        }
+        else {
+          particles_speed_boost_descrease_step_tick_counter--;
+        }
+      
+      }
+
+       particles[i].position.x -= player_velocity.x / 3 + particles_speed_boost; // PARALLAX
+   }
+   else {
+      particles[i].position.x -= player_velocity.x / 3; // PARALLAX
+   }
+
+
+   
 
     particles[i].size -= 1;
+
+  
 
     if (particles[i].real && (particles[i].position.x <= 0 || particles[i].size == 0))
     {
@@ -1177,7 +1317,7 @@ void Game::drawLine(int x1, int y1, int x2, int y2, int step, int size, int time
   }
 }
 
-void Game::renderMenu()
+void Game::renderMenu( const uint8_t time)
 {
   // {
   //   EADK::Display::pushRectUniform(EADK::Screen::Rect, 0x000055);
@@ -1192,29 +1332,30 @@ void Game::renderMenu()
     EADK::Display::pushRectUniform({160 + i * 32, 0, 32, 130 - i * 10}, 0x0000EE); // droite
   }
 
-  const uint8_t size = 6;
-  const uint8_t time = 1;
+  const uint8_t size = 6;//7?
+
   // TITLE
-  // TITLE
+
+  const int8_t y_offset = -10;
 
   // W
-  drawLine(34, 48, 65, 81, 2, size, time);
-  drawLine(66, 80, 98, 48, 2, size, time);
-  drawLine(98, 48, 130, 80, 2, size, time);
-  drawLine(131, 80, 164, 47, 2, size, time);
+  drawLine(34 , 48 + y_offset, 65, 81+ y_offset, 2, size, time);
+  drawLine(66, 80+ y_offset, 98, 48+ y_offset, 2, size, time);
+  drawLine(98, 48 + y_offset, 130, 80+ y_offset, 2, size, time);
+  drawLine(131, 80+ y_offset, 164, 47+ y_offset, 2, size, time);
 
   // V
-  drawLine(164, 47, 196, 80, 2, size, time);
-  drawLine(197, 80, 228, 47, 2, size, time);
+  drawLine(164, 47+ y_offset, 196, 80+ y_offset, 2, size, time);
+  drawLine(197, 80+ y_offset, 228, 47+ y_offset, 2, size, time);
 
   // E
-  drawLine(229, 48, 261, 80, 2, size, time);
+  drawLine(229, 48+ y_offset, 261, 80+ y_offset, 2, size, time);
 
-  drawLine(147, 70, 183, 70, 2, size - 1, time);
+  drawLine(147, 70+ y_offset, 183, 70+ y_offset, 2, size - 1, time);
 
-  drawLine(240, 47, 266, 47, 2, size - 1, time);
-  drawLine(252, 64, 276, 64, 2, size - 1, time);
-  drawLine(262, 81, 286, 81, 2, size - 1, time);
+  drawLine(240, 47+ y_offset, 266, 47+ y_offset, 2, size - 1, time);
+  drawLine(252, 64+ y_offset, 276, 64+ y_offset, 2, size - 1, time);
+  drawLine(262, 81+ y_offset, 286, 81+ y_offset, 2, size - 1, time);
 
 #if STRING
   // EADK::Display::drawString("WAVE", EADK::Point(145, 50), true, 0xAAAAff, 0x0000AA);
@@ -1230,35 +1371,36 @@ void Game::updateMenuButton()
   EADK::Display::pushRectUniform(EADK::Rect(0, 160, 320, 100), 0x000055);
   // EADK::Rect rect = EADK::Rect(x_square_pos, y_square_pos, unit, unit);
   // EADK::Display::pushRectUniform(rect, 0x000000);
-  const uint8_t xsize = 76;
-  const uint8_t ysize = 36;
+  const uint8_t xsize = 77;
+  const uint8_t ysize = 32;
 
-  constexpr uint16_t buttonEasyX = 40;
-  constexpr uint16_t buttonMediumX = 130;
-  constexpr uint16_t buttonHardX = 220;
-  constexpr uint16_t buttonY = 180;
+  constexpr uint16_t buttonEasyX = 28;
+  constexpr uint16_t buttonMediumX = 128;
+  constexpr uint16_t buttonHardX = 225;
+  constexpr uint16_t buttonY = 183;
+  constexpr uint8_t buttonSelectionBorderSize = 4;
 
   if (start_difficulty_chosen == 1)
   {
-    EADK::Rect select(37, buttonY - 3, xsize, ysize);
+    EADK::Rect select(buttonEasyX - buttonSelectionBorderSize, buttonY - buttonSelectionBorderSize, xsize + (buttonSelectionBorderSize * 2), ysize + (buttonSelectionBorderSize * 2));
     EADK::Display::pushRectUniform(select, 0xffffff);
   }
   else if (start_difficulty_chosen == 2)
   {
-    EADK::Rect select(127, buttonY - 3, xsize, ysize);
+    EADK::Rect select(buttonMediumX - buttonSelectionBorderSize, buttonY - buttonSelectionBorderSize, xsize + (buttonSelectionBorderSize * 2), ysize + (buttonSelectionBorderSize * 2));
     EADK::Display::pushRectUniform(select, 0xffffff);
   }
   else if (start_difficulty_chosen == 3)
   {
-    EADK::Rect select(217, buttonY - 3, xsize, ysize);
+    EADK::Rect select(buttonHardX - buttonSelectionBorderSize, buttonY - buttonSelectionBorderSize, xsize + (buttonSelectionBorderSize * 2), ysize + (buttonSelectionBorderSize * 2));
     EADK::Display::pushRectUniform(select, 0xffffff);
   }
 
-  EADK::Rect buttonEasy(buttonEasyX, buttonY, 70, 30);
+  EADK::Rect buttonEasy(buttonEasyX, buttonY, xsize, ysize);
   EADK::Display::pushRectUniform(buttonEasy, difficulty_1_color);
-  EADK::Rect buttonMedium(buttonMediumX, buttonY, 70, 30);
+  EADK::Rect buttonMedium(buttonMediumX, buttonY, xsize, ysize);
   EADK::Display::pushRectUniform(buttonMedium, difficulty_2_color);
-  EADK::Rect buttonHard(buttonHardX, buttonY, 70, 30);
+  EADK::Rect buttonHard(buttonHardX, buttonY, xsize, ysize);
   EADK::Display::pushRectUniform(buttonHard, difficulty_3_color);
 }
 
@@ -1431,10 +1573,15 @@ void Game::horizontalTransition()
 
 void Game::goToMenu()
 {
+  uint8_t time = 1;
+  if (current_statue == DEATH)
+  {
+   time = 0;
+  }
   high_score = 0;
   current_statue = MENU;
   EADK::Display::pushRectUniform(EADK::Screen::Rect, 0x0000AA);
-  renderMenu();
+  renderMenu(time);
   EADK::Timing::msleep(500);
 }
 
@@ -1450,6 +1597,7 @@ void Game::update()
 {
 
   // camera_y = player_y + camera_offset_y;
+  
   handleInput();
 
   if (current_statue == LEVEL)
@@ -1479,7 +1627,7 @@ void Game::update()
     // renderMenu();
   }
 
-  EADK::Timing::msleep(MSPT);
+ 
 }
 
 Game::~Game()

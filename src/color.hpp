@@ -1,5 +1,7 @@
 #include <cstdint>
 
+//Optimise on 16bit colors
+
 struct Color {
     uint8_t r;
     uint8_t g;

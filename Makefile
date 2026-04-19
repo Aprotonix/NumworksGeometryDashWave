@@ -17,6 +17,7 @@ src = $(addprefix src/,\
   storage.c \
 )
 
+
 CPPFLAGS = -std=c++11 -fno-exceptions
 CPPFLAGS += -Os -Wall
 CPPFLAGS += $(shell $(NWLINK) eadk-cflags)
@@ -28,6 +29,7 @@ CFLAGS += -fdata-sections -ffunction-sections
 LDFLAGS = -Wl,--relocatable
 LDFLAGS += -nostartfiles
 LDFLAGS += --specs=nano.specs
+
 
 ifeq ($(LINK_GC),1)
 CPPFLAGS += -fdata-sections -ffunction-sections
@@ -41,6 +43,8 @@ CPPFLAGS += -fwhole-program
 CPPFLAGS += -fvisibility=internal
 LDFLAGS += -flinker-output=nolto-rel
 endif
+
+
 
 .PHONY: build
 build: $(BUILD_DIR)/wave.bin
@@ -56,7 +60,8 @@ $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.nwa
 
 $(BUILD_DIR)/wave.nwa: $(call object_for,$(src)) $(BUILD_DIR)/icon.o
 	@echo "LD      $@"
-	$(Q) $(CC) $(CPPFLAGS) $(LDFLAGS) $^ -o $@
+	$(Q) $(CC) $(CPPFLAGS) $(LDFLAGS) $^  -o $@
+
 
 $(addprefix $(BUILD_DIR)/,%.o): %.cpp | $(BUILD_DIR)
 	@echo "CXX     $^"
